@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: message-service
+
+  datasource:
+    url: jdbc:postgresql://message-db:5432/message_service
+    username: postgres
+    password: 12345678
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+
+eureka:
+  client:
+    enabled: true
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 10
+    service-url:
+      defaultZone: http://service-discovery:8761/eureka/
+  instance:
+    hostname: message-service
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30

@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: feed-service
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    enabled: true
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 10
+    service-url:
+      defaultZone: http://service-discovery:8761/eureka/
+  instance:
+    hostname: feed-service
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+

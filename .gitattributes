@@ -1,0 +1,38 @@
+# Автоматическое определение окончаний строк
+* text=auto
+
+# Явно указать текстовые файлы
+*.md text
+*.txt text
+*.json text
+*.yaml text
+*.yml text
+*.properties text
+*.gradle text
+*.kts text
+*.kt text
+*.java text
+*.ts text
+*.tsx text
+*.js text
+*.jsx text
+*.css text
+*.html text
+*.xml text
+
+# Бинарные файлы
+*.jar binary
+*.war binary
+*.ear binary
+*.class binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Gradle wrapper должен иметь LF
+gradlew text eol=lf
+*.bat text eol=crlf
+

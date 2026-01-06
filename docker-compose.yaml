@@ -1,0 +1,265 @@
+services:
+  service-discovery:
+    build: ./backend/service-discovery-server
+    container_name: service-discovery-server
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8761 > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ===== Auth Service + DB =====
+  auth-db:
+    image: postgres:15
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: auth_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./backend/auth-service
+    container_name: auth-service
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8081:8080"
+    networks:
+      - app-network
+
+  # ===== User Service + DB =====
+  user-db:
+    image: postgres:15
+    container_name: user-db
+    environment:
+      POSTGRES_DB: user_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5432:5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: ./backend/user-service
+    container_name: user-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8082:8080"
+    networks:
+      - app-network
+
+  # ===== Group Service + DB =====
+  group-db:
+    image: postgres:15
+    container_name: group-db
+    environment:
+      POSTGRES_DB: group_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5434:5432"
+    volumes:
+      - group-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  group-service:
+    build: ./backend/group-service
+    container_name: group-service
+    depends_on:
+      group-db:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8083:8080"
+    networks:
+      - app-network
+
+  # ===== Event Service + DB =====
+  event-db:
+    image: postgres:15
+    container_name: event-db
+    environment:
+      POSTGRES_DB: event_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5435:5432"
+    volumes:
+      - event-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  event-service:
+    build: ./backend/event-service
+    container_name: event-service
+    depends_on:
+      event-db:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8084:8080"
+    networks:
+      - app-network
+
+  # ===== Message Service + DB =====
+  message-db:
+    image: postgres:15
+    container_name: message-db
+    environment:
+      POSTGRES_DB: message_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - "5436:5432"
+    volumes:
+      - message-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  message-service:
+    build: ./backend/message-service
+    container_name: message-service
+    depends_on:
+      message-db:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8085:8080"
+    networks:
+      - app-network
+
+  # ===== Feed Service =====
+  feed-service:
+    build: ./backend/feed-service
+    container_name: feed-service
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      group-service:
+        condition: service_started
+      event-service:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8087:8080"
+    networks:
+      - app-network
+
+  # ===== Gateway =====
+  gateway-service:
+    build: ./backend/gateway-service
+    container_name: gateway-service
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      group-service:
+        condition: service_started
+      event-service:
+        condition: service_started
+      message-service:
+        condition: service_started
+      feed-service:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  # В разделе services добавьте:
+  frontend:
+    build: ./frontend  # УДАЛИТЕ target: development
+    container_name: frontend-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=http://localhost:8080
+    networks:
+      - app-network
+
+# ===== Volumes для БД =====
+volumes:
+  auth-db-data:
+  user-db-data:
+  group-db-data:
+  event-db-data:
+  message-db-data:
+
+# ===== Сети =====
+networks:
+  app-network:
+    driver: bridge

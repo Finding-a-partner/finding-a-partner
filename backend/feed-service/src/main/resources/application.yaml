@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: feed-service
+
+server:
+  port: 8087
+
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
