@@ -22,9 +22,17 @@ class SecurityConfig {
         http
             .csrf { it.disable() }
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/auth/**").permitAll()
+                auth
+                    .requestMatchers(
+                        "/actuator/**",
+                        "/actuator",
+                        "/actuator/*",
+                        "/actuator/*/**"
+                    ).permitAll()
+                    .requestMatchers("/auth/**").permitAll()
                     .requestMatchers("/.well-known/**").permitAll()
                     .anyRequest().authenticated()
+  //                  .anyRequest().permitAll()
             }
         return http.build()
     }

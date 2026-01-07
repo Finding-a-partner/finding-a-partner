@@ -1,0 +1,113 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alerting (опционально)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# Правила (опционально)
+# rule_files:
+#   - "alert_rules.yml"
+
+scrape_configs:
+  # Prometheus сам себя
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Eureka Server
+  - job_name: 'service-discovery'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['service-discovery:8761']
+        labels:
+          application: 'service-discovery'
+          environment: 'docker'
+
+  # Auth Service
+  - job_name: 'auth-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth-service:8080']  # внутри сети Docker, порт 8080
+        labels:
+          application: 'auth-service'
+          environment: 'docker'
+    scrape_interval: 10s
+
+  # User Service
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['user-service:8080']
+        labels:
+          application: 'user-service'
+          environment: 'docker'
+
+  # Group Service
+  - job_name: 'group-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['group-service:8080']
+        labels:
+          application: 'group-service'
+          environment: 'docker'
+
+  # Event Service
+  - job_name: 'event-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['event-service:8080']
+        labels:
+          application: 'event-service'
+          environment: 'docker'
+
+  # Message Service
+  - job_name: 'message-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['message-service:8080']
+        labels:
+          application: 'message-service'
+          environment: 'docker'
+
+  # Feed Service
+  - job_name: 'feed-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['feed-service:8080']
+        labels:
+          application: 'feed-service'
+          environment: 'docker'
+
+  # Gateway Service
+  - job_name: 'gateway-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway-service:8080']
+        labels:
+          application: 'gateway-service'
+          environment: 'docker'
+
+  # Автоматическое обнаружение через Eureka (альтернатива ручному указанию)
+  - job_name: 'eureka-discovery'
+    metrics_path: '/actuator/prometheus'
+    eureka_sd_configs:
+      - server: 'http://service-discovery:8761/eureka'
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__meta_eureka_app_name]
+        target_label: application
+      - source_labels: [__meta_eureka_instance_id]
+        target_label: instance
+      # Берем порт из метаданных Eureka
+      - source_labels: [__address__, __meta_eureka_metadata_prometheus_port]
+        regex: '([^:]+)(?::\d+)?;(\d+)'
+        replacement: '${1}:${2}'
+        target_label: __address__
+      # Фильтруем только сервисы с меткой prometheus.scrape
+      - action: keep
+        regex: 'true'
+        source_labels: [__meta_eureka_metadata_prometheus_scrape]

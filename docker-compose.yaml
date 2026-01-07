@@ -59,7 +59,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 12345678
     ports:
-      - "5432:5432"
+      - "5437:5432"
     volumes:
       - user-db-data:/var/lib/postgresql/data
     networks:
@@ -236,7 +236,45 @@ services:
     networks:
       - app-network
 
-  # В разделе services добавьте:
+    # ===== Monitoring (Prometheus + Grafana) =====
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - app-network
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+
   frontend:
     build: ./frontend  # УДАЛИТЕ target: development
     container_name: frontend-app
@@ -258,6 +296,8 @@ volumes:
   group-db-data:
   event-db-data:
   message-db-data:
+  prometheus-data:
+  grafana-data:
 
 # ===== Сети =====
 networks:
